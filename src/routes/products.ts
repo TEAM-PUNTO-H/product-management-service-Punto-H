@@ -1,13 +1,12 @@
 import { Router, Request, Response } from "express";
 import { Product } from "../models/Product";
-import { Op } from "sequelize";
 
 const router = Router();
 
 
 /**
  * @swagger
- * /api/products:
+ * /api/products/createProduct:
  *   post:
  *     summary: Crear Producto
  *     tags: [Productos]
@@ -30,7 +29,7 @@ const router = Router();
  *       201:
  *         description: Producto creado
  */
-router.post("/", async (req: Request, res: Response) => {
+router.post("/createProduct", async (req: Request, res: Response) => {
   try {
     const { name, description, price, id_user } = req.body;
 
@@ -66,7 +65,7 @@ router.post("/", async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/products:
+ * /api/products/allProducts:
  *   get:
  *     summary: Lista de productos
  *     tags: [Productos]
@@ -74,7 +73,7 @@ router.post("/", async (req: Request, res: Response) => {
  *       200:
  *         description: Retorna todos los productos
  */
-router.get("/", async (req: Request, res: Response) => {
+router.get("/allProducts", async (req: Request, res: Response) => {
   try {
     const products = await Product.findAll();
 
@@ -90,12 +89,33 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/products/productById/{id}:
+ *   get:
+ *     summary: Lista de productos
+ *     tags: [Productos]
+ *     responses:
+ *       200:
+ *         description: Retorna productos por ID
+ */
+router.get('/productById/:id', async (req, res) => {
+    try {
+        const product = await Product.findByPk(req.params.id);
+        if (!product) {
+            return res.status(404).json({ message: "Producto no encontrado" });
+        }
+        res.json(product);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener el producto" });
+    }
+});
 
 /**
  * @swagger
- * /api/products:
+ * /api/products/productByName:
  *   get:
- *     summary: Lista de productos (con búsqueda opcional por nombre)
+ *     summary: Busqueda de un producto por nombre
  *     tags: [Productos]
  *     parameters:
  *       - in: query
@@ -105,23 +125,25 @@ router.get("/", async (req: Request, res: Response) => {
  *         description: Buscar producto por nombre
  *     responses:
  *       200:
- *         description: Retorna todos los productos o los filtrados por nombre
+ *         description: Retorna el producto buscado por nombre
  */
-router.get("/", async (req: Request, res: Response) => {
+router.get("/productByName", async (req: Request, res: Response) => {
   try {
     const { name } = req.query;
-
-    let whereClause = {};
-
-    if (name) {
-      whereClause = {
-        name: {
-          [Op.like]: `%${name}%`
-        }
-      };
+   
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({
+        message: "El parámetro 'name' es obligatorio y debe ser una cadena de texto"
+      });
     }
 
-    const products = await Product.findAll({ where: whereClause });
+    const products = await Product.findOne({where: {name: name}});
+
+     if (!products) {
+      return res.status(404).json({
+        message: "No se encontraron productos con ese nombre"
+      });
+    }
 
     res.status(200).json({
       message: "Productos",
@@ -139,7 +161,7 @@ router.get("/", async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/products/{id}:
+ * /api/products/updateProduct/{id}:
  *   put:
  *     summary: Editar un producto existente
  *     tags: [Productos]
@@ -169,78 +191,15 @@ router.get("/", async (req: Request, res: Response) => {
  *       200:
  *         description: Producto actualizado
  */
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/updateProduct/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Buscar producto
     const product = await Product.findByPk(id);
-
     if (!product) {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
 
-    // Actualizar SOLO los campos enviados (evita perder datos)
-    await product.update(req.body);
-
-    res.status(200).json({
-      message: "Producto actualizado",
-      product
-    });
-
-  } catch (error: any) {
-    res.status(500).json({
-      message: "Error al actualizar el producto",
-      error: error.message
-    });
-  }
-});
-
-
-/**
- * @swagger
- * /api/products/{id}:
- *   put:
- *     summary: Editar un producto existente
- *     tags: [Productos]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del producto a editar
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               id_user:
- *                 type: number
- *     responses:
- *       200:
- *         description: Producto actualizado
- */
-router.put("/:id", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    // Buscar producto
-    const product = await Product.findByPk(id);
-
-    if (!product) {
-      return res.status(404).json({ message: "Producto no encontrado" });
-    }
-
-    // Actualizar SOLO los campos enviados (evita perder datos)
     await product.update(req.body);
 
     res.status(200).json({
@@ -258,7 +217,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/products/{id}:
+ * /api/products/deleteProduct/{id}:
  *   delete:
  *     summary: Eliminar un producto
  *     tags: [Productos]
@@ -273,12 +232,13 @@ router.put("/:id", async (req: Request, res: Response) => {
  *       200:
  *         description: Producto eliminado
  */
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/deleteProduct/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     const product = await Product.findByPk(id);
 
+    console.log("Producto a eliminar:", product);
     if (!product) {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
