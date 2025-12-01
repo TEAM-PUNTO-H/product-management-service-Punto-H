@@ -1,5 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Review } from "../models/Review";
+import axios from "axios";
+import { Product } from "../models/Product";
 
 const router = Router();
 
@@ -35,7 +37,7 @@ router.get("/allReviews", async (req: Request, res: Response) => {
  * /api/reviews/reviewById/{id}:
  *   get:
  *     summary: Lista de reviews por ID
- *     tags: [Productos]
+ *     tags: [Reviews]
  *     responses:
  *       200:
  *         description: Retorna review por ID
@@ -88,6 +90,16 @@ router.post("/createReview", async (req: Request, res: Response) => {
   try {
     const { id_user, id_product, score, review } = req.body;
 
+    const product = await Product.findByPk(id_product);
+    if (!product) {
+      return res.status(404).json({ message: "Producto no encontrado" });
+    }
+
+    const userResponse = await axios.get(`http://users-service:4000/api/users/userById/${id_user}`);
+    if (!userResponse.data) {
+      return res.status(404).json({ message: "El usuario no existe" });
+    }
+
     const newReview = await Review.create({
       id_user,
       id_product,
@@ -96,7 +108,7 @@ router.post("/createReview", async (req: Request, res: Response) => {
     });
 
     res.status(201).json({
-      message: "Review creada",
+      message: "Review creada correctamente",
       review: newReview,
     });
   } catch (error: any) {
@@ -106,6 +118,7 @@ router.post("/createReview", async (req: Request, res: Response) => {
     });
   }
 });
+
 
 
 /**
@@ -139,9 +152,29 @@ router.post("/createReview", async (req: Request, res: Response) => {
 router.put("/updateReview/:id", async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const {id_user, id_product} = req.body;
+
         const review = await Review.findByPk(id);
         if (!review) {
             return res.status(404).json({ message: "Review no encontrada" });
+        }
+
+        if (id_user){
+            try {
+                const userResponse = await axios.get(`http://users-service:4000/api/users/userById/${id_user}`);
+                if (!userResponse.data) {
+                    return res.status(404).json({ message: "El usuario no existe" });
+                }
+            } catch (error) {
+                return res.status(500).json({ message: "Error al verificar el usuario" });
+            }
+
+        }
+        if (id_product){
+            const product = await Product.findByPk(id_product); 
+            if (!product) {
+                return res.status(404).json({ message: "Producto no encontrado" });
+            }
         }
         await review.update(req.body);
         res.status(200).json({
@@ -150,11 +183,12 @@ router.put("/updateReview/:id", async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         res.status(500).json({
-            message: "Error al actualizar la review",
+            message: "Error al actualizar la review", 
             error: error.message
         });
     }
 });
+
 
 /**
  * @swagger
