@@ -101,7 +101,7 @@ router.get("/allRestaurants", async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /api/restaurant/productById/{id}:
+ * /api/restaurant/restaurantById/{id}:
  *   get:
  *     summary: Lista de restaurantes
  *     tags: [Restaurantes]
@@ -205,7 +205,7 @@ router.put("/updateRestaurant/:id", async (req: Request, res: Response) => {
  *       200:
  *         description: Restaurante eliminado
  */
-router.delete("/deleteRestaurant/:id", async (req: Request, res: Response) => {
+router.delete("/delete/:id", async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
