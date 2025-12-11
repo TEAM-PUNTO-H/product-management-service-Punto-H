@@ -2,6 +2,7 @@ import express from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import productRouter from "./routes/products";
 import reviewRouter from "./routes/review";
+import restaurantRouter from "./routes/restaurant";
 
 const app = express();
 app.use(express.json());
@@ -23,6 +24,7 @@ const swaggerSpec = swaggerJsdoc({
 app.get('/swagger.json', (req,res)=> res.json(swaggerSpec))
 app.use("/api/products", productRouter);
 app.use("/api/reviews", reviewRouter);
+app.use("/api/restaurant", restaurantRouter);
 app.get('/api/products/health',(_,res)=> res.send({message: 'OK'}));
 
 export default app;
