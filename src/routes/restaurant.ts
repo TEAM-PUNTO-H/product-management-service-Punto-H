@@ -41,9 +41,11 @@ const router = Router();
  */
 router.post("/create", async (req: Request, res: Response) => {
     try {
-        const { name, id_user, description, phoneNumber, sendCost, typeFood, minTime, maxTime } = req.body;
+        const { name, id_user, description, phoneNumber, sendCost, typeFood, minTime, maxTime, address } = req.body;
 
-        if (!name || !description || !phoneNumber || !sendCost || !typeFood || !minTime || !maxTime || !id_user) {
+        if (!name || !description || !phoneNumber || !sendCost || !typeFood || !minTime || !maxTime || !id_user
+            || !address
+        ) {
             return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
@@ -56,7 +58,8 @@ router.post("/create", async (req: Request, res: Response) => {
             typeFood,
             minTime,
             maxTime,
-            id_user
+            id_user,
+            address
         });
 
         res.status(201).json({
